@@ -56,24 +56,22 @@ def gift():
         return redirect(url_for("login"))
 
     photos = [
-        
-        {"src": "/static/photos/first01.PNG", "caption": "Bade logo ke sath hamara phela photo session 😄"},
-        {"src": "/static/photos/4.jpg", "caption": "Remember this maggie party mam?"},
-        {"src": "/static/photos/1.jpg", "caption": "Happy Birthday Mam"},
-        {"src": "/static/photos/5.jpg", "caption": "Our selfie 😄"},
-        {"src": "/static/photos/3.jpg", "caption": "12th Ka Last Day😢"},
-        
+        {"src": url_for('static', filename='photos/first01.PNG'), "caption": "Bade logo ke sath hamara phela photo session 😄"},
+        {"src": url_for('static', filename='photos/4.jpg'), "caption": "Remember this maggie party mam?"},
+        {"src": url_for('static', filename='photos/1.jpg'), "caption": "Happy Birthday Mam"},
+        {"src": url_for('static', filename='photos/5.jpg'), "caption": "Our selfie 😄"},
+        {"src": url_for('static', filename='photos/3.jpg'), "caption": "12th Ka Last Day😢"},
     ]
     videos = [
-        {"src": "/static/videos/01.mp4", "title": "A Funny Video", "poster": "/static/photos/photo1.jpg"}
+        {"src": url_for('static', filename='videos/01.mp4'), "title": "A Funny Video", "poster": url_for('static', filename='photos/photo1.jpg')}
     ]
     audios = [
-        {"src": "/static/audios/01.mp3", "title": "Happy Birthday Song✨"}
+        {"src": url_for('static', filename='audios/01.mp3'), "title": "Happy Birthday Song✨"}
     ]
     downloads = [
-        {"href": "/static/downloads/letter.pdf", "label": "Open your letter (PDF)"}
+        {"href": url_for('static', filename='downloads/letter.pdf'), "label": "Open your letter (PDF)"}
     ]
-    note = " Happy Birthday to an extraordinary teacher and an incredible person! On your Sepcial day, I want to express my heartfelt gratitude for all that you do. Your dedication, guidance, and unwavering support have made a profound impact on my life. I'm so thankful for the lessons you've taught me. Bahut yaad aati hai Mam Kaise Classes Bunk krke aapse milne aa jate the,  Janamdin ki bahut bahut Badhai Mam 🎂💫"
+    note = "Happy Birthday to an extraordinary teacher..."
 
     return render_template("gift.html",
                            username=session.get("username"),
