@@ -23,7 +23,7 @@
 <body class="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-amber-50 text-gray-800">
   <header class="p-4">
     <div class="max-w-5xl mx-auto flex items-center justify-between">
-      <a href="{{ url_for('root') }}" class="font-semibold text-pink-600">🎁 Birthday Portal</a>
+      <a href="{{ url_for('home') }}">🎁 Birthday Portal</a>
       <nav class="text-sm">
         {% if session.get('uid') %}
           <a class="px-3 py-2 hover:text-pink-600" href="{{ url_for('dashboard') }}">Dashboard</a>
