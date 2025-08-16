@@ -10,17 +10,19 @@ from werkzeug.utils import secure_filename
 client_id = os.environ.get("GOOGLE_CLIENT_ID")
 client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
 
-
 flow = Flow.from_client_config(
     {
         "web": {
-            "client_id": GOOGLE_CLIENT_ID,
-            "client_secret": GOOGLE_CLIENT_SECRET,
-            ...
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "redirect_uris": ["https://your-app.onrender.com/callback"],
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token"
         }
     },
-    scopes=["..."]
+    scopes=["https://www.googleapis.com/auth/userinfo.profile"]
 )
+
 
 # ---------------- App Config ----------------
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
