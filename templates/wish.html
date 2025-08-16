@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block content %}
+{% if not_found %}
+  <div class="text-center p-10 glass rounded-2xl shadow-soft">
+    <h1 class="text-3xl font-semibold text-rose-600">Page not found</h1>
+    <p class="text-gray-600 mt-2">This gift link may be incorrect or expired.</p>
+  </div>
+{% else %}
+  <section class="text-center mb-8">
+    <h1 class="text-4xl font-extrabold text-pink-600 mb-2">Happy Birthday! 🎂</h1>
+    <p class="text-gray-700 max-w-2xl mx-auto">{{ note }}</p>
+  </section>
+
+  {% if photos %}
+  <section class="mb-10">
+    <h2 class="text-xl font-semibold mb-3">Photos</h2>
+    <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
+      {% for p in photos %}
+        <img class="rounded-2xl shadow-soft" src="{{ p }}" loading="lazy"/>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if videos %}
+  <section class="mb-10">
+    <h2 class="text-xl font-semibold mb-3">Videos</h2>
+    <div class="grid md:grid-cols-2 gap-4">
+      {% for v in videos %}
+        <video class="w-full rounded-2xl shadow-soft" controls>
+          <source src="{{ v }}">
+        </video>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if audios %}
+  <section class="mb-10">
+    <h2 class="text-xl font-semibold mb-3">Music</h2>
+    <div class="space-y-3">
+      {% for a in audios %}
+        <audio class="w-full" controls>
+          <source src="{{ a }}">
+        </audio>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // confetti burst
+  (function(){
+    const duration=3500, end=Date.now()+duration;
+    (function frame(){
+      confetti({particleCount:4, spread:70, startVelocity:45, origin:{x:Math.random(), y:1}});
+      if(Date.now()<end) requestAnimationFrame(frame);
+    })();
+  })();
+
+  // floating balloons
+  function spawnBalloons(n=10){
+    const colors=['#f43f5e','#fb7185','#f97316','#f59e0b','#22c55e','#3b82f6','#a855f7'];
+    for(let i=0;i<n;i++){
+      const b=document.createElement('div');
+      b.className='balloon';
+      b.style.left=(Math.random()*100)+'vw';
+      b.style.background=colors[Math.floor(Math.random()*colors.length)];
+      b.style.animationDelay=(Math.random()*4)+'s';
+      document.body.appendChild(b);
+      setTimeout(()=>b.remove(), 12500);
+    }
+  }
+  spawnBalloons(12);
+</script>
+{% endblock %}

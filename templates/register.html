@@ -1,21 +1,15 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Register - Birthday Gift</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    <div class="login-box">
-        <h1>🎉 Register</h1>
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
-        <form method="POST">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Sign Up</button>
-        </form>
-        <p>Already registered? <a href="{{ url_for('login') }}">Login here</a></p>
-    </div>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-xl mx-auto p-8 glass rounded-2xl shadow-soft">
+  <h1 class="text-2xl font-semibold mb-2">Create your account ✨</h1>
+  <p class="text-sm text-gray-600 mb-6">We’ll generate a shareable link for your gift.</p>
+  <form method="POST" class="space-y-4">
+    <input name="username" placeholder="Choose a username" class="w-full rounded-xl border px-4 py-3" required />
+    <input name="password" type="password" placeholder="Create a password" class="w-full rounded-xl border px-4 py-3" required />
+    <textarea name="note" placeholder="Write your birthday message (you can edit later)" rows="4" class="w-full rounded-xl border px-4 py-3"></textarea>
+    <button class="w-full bg-pink-600 hover:bg-pink-700 text-white rounded-xl px-4 py-3">Register</button>
+  </form>
+  <p class="text-xs mt-4 text-gray-600">Already have an account?
+    <a class="text-pink-600" href="{{ url_for('login') }}">Login</a></p>
+</div>
+{% endblock %}

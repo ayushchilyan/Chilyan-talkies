@@ -1,21 +1,20 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Login - Birthday Gift</title>
-    <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-    <div class="login-box">
-        <h1>🔑 Login</h1>
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
-        <form method="POST">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Login</button>
-        </form>
-        <p>New here? <a href="{{ url_for('register') }}">Register now</a></p>
-    </div>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<div class="grid md:grid-cols-2 gap-6 items-center">
+  <div class="p-8 glass rounded-2xl shadow-soft">
+    <h1 class="text-2xl font-semibold mb-2">Welcome back 👋</h1>
+    <p class="text-sm text-gray-600 mb-6">Login to manage your birthday page.</p>
+    <form method="POST" class="space-y-4">
+      <input name="username" placeholder="Username" class="w-full rounded-xl border px-4 py-3" required />
+      <input name="password" type="password" placeholder="Password" class="w-full rounded-xl border px-4 py-3" required />
+      <button class="w-full bg-pink-600 hover:bg-pink-700 text-white rounded-xl px-4 py-3">Login</button>
+    </form>
+    <p class="text-xs mt-4 text-gray-600">New here?
+      <a class="text-pink-600" href="{{ url_for('register') }}">Create an account</a></p>
+  </div>
+  <div class="text-center">
+    <h2 class="text-3xl font-bold text-pink-600 mb-2">Make someone smile today 😊</h2>
+    <p class="text-gray-600">Create a beautiful birthday page with photos, videos, and music.</p>
+  </div>
+</div>
+{% endblock %}

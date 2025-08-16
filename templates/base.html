@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>{{ title or "Birthday Portal" }}</title>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{boxShadow:{soft:'0 20px 40px rgba(0,0,0,.08)'}}}}</script>
+
+  <!-- Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    .glass{background:rgba(255,255,255,.6);backdrop-filter:blur(12px)}
+    .balloon{position:fixed;bottom:-120px;width:46px;height:60px;border-radius:50%;opacity:.85;animation:rise 12s ease-in infinite;z-index:5}
+    .balloon:after{content:"";position:absolute;left:22px;top:58px;width:2px;height:28px;background:#1f2937}
+    @keyframes rise{to{transform:translateY(-120vh)}}
+    .fadein{animation:fade .5s ease-out both}@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-amber-50 text-gray-800">
+  <header class="p-4">
+    <div class="max-w-5xl mx-auto flex items-center justify-between">
+      <a href="{{ url_for('root') }}" class="font-semibold text-pink-600">🎁 Birthday Portal</a>
+      <nav class="text-sm">
+        {% if session.get('uid') %}
+          <a class="px-3 py-2 hover:text-pink-600" href="{{ url_for('dashboard') }}">Dashboard</a>
+          <a class="px-3 py-2 hover:text-pink-600" href="{{ url_for('logout') }}">Logout</a>
+        {% else %}
+          <a class="px-3 py-2 hover:text-pink-600" href="{{ url_for('login') }}">Login</a>
+          <a class="px-3 py-2 hover:text-pink-600" href="{{ url_for('register') }}">Register</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  {% with msgs=get_flashed_messages(with_categories=true) %}
+    {% if msgs %}
+    <div class="max-w-3xl mx-auto">
+      {% for cat,msg in msgs %}
+        <div class="rounded-xl px-4 py-3 my-2 text-sm shadow-soft {{'bg-green-50 text-green-700' if cat=='success' else 'bg-rose-50 text-rose-700'}}">{{ msg }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  <main class="max-w-5xl mx-auto p-4 fadein">
+    {% block content %}{% endblock %}
+  </main>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

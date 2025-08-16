@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 class="text-2xl font-semibold mb-4">Hi, {{ username }} 👋</h1>
+
+<div class="grid lg:grid-cols-3 gap-6">
+  <!-- Message -->
+  <div class="lg:col-span-2 glass rounded-2xl p-6 shadow-soft">
+    <h2 class="font-semibold mb-2">Your birthday message</h2>
+    <form method="POST" class="space-y-3">
+      <textarea name="note" rows="4" class="w-full rounded-xl border px-4 py-3" placeholder="Write something sweet…">{{ note }}</textarea>
+      <button class="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-4 py-2">Save Message</button>
+    </form>
+    <div class="text-xs text-gray-500 mt-2">Tip: You can update this anytime.</div>
+  </div>
+
+  <!-- Share -->
+  <div class="glass rounded-2xl p-6 shadow-soft">
+    <h2 class="font-semibold mb-2">Share link</h2>
+    <input readonly value="{{ share_url }}" class="w-full text-sm rounded-xl border px-3 py-2" />
+    <p class="text-xs text-gray-500 mt-2">Send this link to the birthday person 🎁</p>
+  </div>
+</div>
+
+<!-- Uploads -->
+<div class="grid md:grid-cols-3 gap-6 mt-6">
+  <div class="glass rounded-2xl p-6 shadow-soft">
+    <h3 class="font-semibold mb-3">Upload Photos</h3>
+    <form method="POST" enctype="multipart/form-data" class="space-y-3">
+      <input type="file" name="file" accept=".png,.jpg,.jpeg,.gif,.webp" class="w-full rounded-xl border px-3 py-2" required>
+      <button class="bg-pink-600 hover:bg-pink-700 text-white rounded-xl px-4 py-2 w-full">Upload</button>
+    </form>
+    <div class="grid grid-cols-3 gap-2 mt-4">
+      {% for p in photos %}
+        <img class="rounded-lg shadow" src="{{ url_for('serve_upload', username=username, media='photos', filename=p['filename']) }}" />
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="glass rounded-2xl p-6 shadow-soft">
+    <h3 class="font-semibold mb-3">Upload Videos</h3>
+    <form method="POST" enctype="multipart/form-data" class="space-y-3">
+      <input type="file" name="file" accept=".mp4,.mov,.m4v,.webm" class="w-full rounded-xl border px-3 py-2" required>
+      <button class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl px-4 py-2 w-full">Upload</button>
+    </form>
+    <div class="space-y-2 mt-4">
+      {% for v in videos %}
+        <video class="w-full rounded-lg shadow" controls>
+          <source src="{{ url_for('serve_upload', username=username, media='videos', filename=v['filename']) }}">
+        </video>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="glass rounded-2xl p-6 shadow-soft">
+    <h3 class="font-semibold mb-3">Upload Audios</h3>
+    <form method="POST" enctype="multipart/form-data" class="space-y-3">
+      <input type="file" name="file" accept=".mp3,.wav,.m4a,.aac" class="w-full rounded-xl border px-3 py-2" required>
+      <button class="bg-amber-600 hover:bg-amber-700 text-white rounded-xl px-4 py-2 w-full">Upload</button>
+    </form>
+    <div class="space-y-2 mt-4">
+      {% for a in audios %}
+        <audio controls class="w-full">
+          <source src="{{ url_for('serve_upload', username=username, media='audios', filename=a['filename']) }}">
+        </audio>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
