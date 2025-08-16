@@ -7,8 +7,9 @@ from authlib.integrations.flask_client import OAuth
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 
-client_id = os.getenv("GOOGLE_CLIENT_ID")
-client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+client_id = os.environ.get("GOOGLE_CLIENT_ID")
+client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+
 
 flow = Flow.from_client_config(
     {
