@@ -22,6 +22,10 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = "CHANGE_ME_SUPER_SECRET"
 app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024  # 64 MB
 
+# ✅ Google Client ID & Secret environment se lo
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+
 # ---------------- OAuth Setup ----------------
 oauth = OAuth(app)
 google = oauth.register(
