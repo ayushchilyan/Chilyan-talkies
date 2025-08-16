@@ -22,21 +22,6 @@ app = Flask(__name__)
 app.config["SECRET_KEY"] = "CHANGE_ME_SUPER_SECRET"
 app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024  # 64 MB
 
-# ✅ Google Client ID & Secret environment se lo
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-
-# ---------------- OAuth Setup ----------------
-oauth = OAuth(app)
-google = oauth.register(
-    name='google',
-    client_id="YOUR_GOOGLE_CLIENT_ID",
-    client_secret="YOUR_GOOGLE_CLIENT_SECRET",
-    access_token_url="https://accounts.google.com/o/oauth2/token",
-    authorize_url="https://accounts.google.com/o/oauth2/auth",
-    api_base_url="https://www.googleapis.com/oauth2/v1/",
-    client_kwargs={"scope": "openid email profile"},
-)
 
 # ---------------- DB Helpers ----------------
 def get_db():
@@ -155,19 +140,37 @@ def register():
         return redirect(url_for("login"))
     return render_template("register.html")
 
+# ---------------- OAuth Setup ----------------
+oauth = OAuth(app)
+oauth.register(
+    name='google',
+    client_id=GOOGLE_CLIENT_ID,
+    client_secret=GOOGLE_CLIENT_SECRET,
+    access_token_url="https://accounts.google.com/o/oauth2/token",
+    authorize_url="https://accounts.google.com/o/oauth2/auth",
+    api_base_url="https://www.googleapis.com/oauth2/v1/",
+    client_kwargs={"scope": "openid email profile"},
+)
+
+# ---------------- Routes ----------------
 @app.route("/login")
 def login():
     redirect_uri = url_for("authorize", _external=True)
-    return google.authorize_redirect(redirect_uri)
+    return oauth.google.authorize_redirect(redirect_uri)   # <- fix here
 
 @app.route("/authorize")
 def authorize():
-    token = google.authorize_access_token()
-    user_info = google.parse_id_token(token)
+    token = oauth.google.authorize_access_token()         # <- fix here
+    user_info = oauth.google.parse_id_token(token)        # <- fix here
     email = user_info["email"]
     user = get_user(email=email)
     if user:
-        session["user"] = {"name": user["name"], "email": user["email"], "dob": user["dob"], "username": user["username"]}
+        session["user"] = {
+            "name": user["name"],
+            "email": user["email"],
+            "dob": user["dob"],
+            "username": user["username"]
+        }
         return redirect(url_for("home"))
     else:
         session["temp_email"] = email
