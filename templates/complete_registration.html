@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Complete Registration</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 h-screen flex items-center justify-center">
+  <div class="bg-white p-10 rounded-2xl shadow-xl w-96">
+    <h2 class="text-2xl font-bold text-center text-gray-800 mb-6">✨ Complete Registration</h2>
+
+    <p class="text-gray-600 text-sm mb-4">We detected your Gmail: <b>{{ email }}</b><br> Please complete your details.</p>
+
+    <form method="POST" class="space-y-4">
+      <input type="text" name="name" placeholder="Full Name" required
+             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+
+      <input type="date" name="dob" required
+             class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500">
+
+      <button type="submit"
+              class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+        Complete Registration
+      </button>
+    </form>
+  </div>
+</body>
+</html>

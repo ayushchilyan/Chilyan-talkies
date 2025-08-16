@@ -120,44 +120,83 @@ def save_media(user, file_storage):
     return kind, None
 
 # -------------- Routes ----------------------
+# ===== Routes =====
 @app.route("/")
-def root():
-    if session.get("uid"):
-        return redirect(url_for("dashboard"))
-    return redirect(url_for("login"))
+def home():
+    if "user" in session:
+        return f"Welcome {session['user']['name']}! Your DOB: {session['user']['dob']}"
+    return render_template("home.html")
 
-@app.route("/register", methods=["GET","POST"])
+
+
+# --- Registration ---
+@app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        username = (request.form.get("username") or "").strip()
-        password = (request.form.get("password") or "").strip()
-        note = (request.form.get("note") or "").strip()
+        name = request.form["name"]
+        email = request.form["email"]
+        dob = request.form["dob"]
 
-        if not username or not password:
-            flash("Please fill all fields.", "error")
-            return render_template("register.html")
+        conn = sqlite3.connect("users.db")
+        cur = conn.cursor()
+        try:
+            cur.execute("INSERT INTO users (name, email, dob) VALUES (?, ?, ?)", (name, email, dob))
+            conn.commit()
+        except sqlite3.IntegrityError:
+            return "Email already registered!"
+        conn.close()
 
-        if get_user(username):
-            flash("Username already exists.", "error")
-            return render_template("register.html")
-
-        slug = create_user(username, password, note)
-        flash("Registered successfully. Please login.", "success")
         return redirect(url_for("login"))
     return render_template("register.html")
 
-@app.route("/login", methods=["GET","POST"])
+
+# --- Gmail Login ---
+@app.route("/login")
 def login():
+    redirect_uri = url_for("authorize", _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+
+@app.route("/authorize")
+def authorize():
+    token = google.authorize_access_token()
+    user_info = google.parse_id_token(token)
+    email = user_info["email"]
+
+    conn = sqlite3.connect("users.db")
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM users WHERE email = ?", (email,))
+    user = cur.fetchone()
+    conn.close()
+
+    if user:  # Already registered
+        session["user"] = {"name": user[1], "email": user[2], "dob": user[3]}
+        return redirect(url_for("home"))
+    else:  # Not registered → Ask DOB
+        session["temp_email"] = email
+        return redirect(url_for("complete_registration"))
+
+@app.route("/complete_registration", methods=["GET", "POST"])
+def complete_registration():
+    if "temp_email" not in session:
+        return redirect(url_for("home"))
+
     if request.method == "POST":
-        username = (request.form.get("username") or "").strip()
-        password = (request.form.get("password") or "").strip()
-        user = get_user(username)
-        if user and check_password_hash(user["password_hash"], password):
-            session["uid"] = user["id"]
-            session["username"] = user["username"]
-            return redirect(url_for("dashboard"))
-        flash("Wrong username or password.", "error")
-    return render_template("login.html")
+        name = request.form["name"]
+        dob = request.form["dob"]
+        email = session["temp_email"]
+
+        conn = sqlite3.connect("users.db")
+        cur = conn.cursor()
+        cur.execute("INSERT INTO users (name, email, dob) VALUES (?, ?, ?)", (name, email, dob))
+        conn.commit()
+        conn.close()
+
+        session["user"] = {"name": name, "email": email, "dob": dob}
+        session.pop("temp_email", None)
+        return redirect(url_for("home"))
+
+    return render_template("complete_registration.html", email=session["temp_email"])
 
 @app.route("/logout")
 def logout():
