@@ -9,6 +9,18 @@ from werkzeug.utils import secure_filename
 
 client_id = os.getenv("GOOGLE_CLIENT_ID")
 client_secret = os.getenv("GOOGLE_CLIENT_SECRET")
+
+flow = Flow.from_client_config(
+    {
+        "web": {
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            ...
+        }
+    },
+    scopes=["..."]
+)
+
 # ---------------- App Config ----------------
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 DB_PATH = os.path.join(BASE_DIR, "app.db")
