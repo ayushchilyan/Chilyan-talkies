@@ -28,3 +28,4 @@ wsproto==1.2.0
 WTForms==3.2.1
 flask-dance
 oauthlib
+authlib==1.2.0
