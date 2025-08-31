@@ -1,79 +1,91 @@
-{% extends "base.html" %}
-{% block content %}
-{% if not_found %}
-  <div class="text-center p-10 glass rounded-2xl shadow-soft">
-    <h1 class="text-3xl font-semibold text-rose-600">Page not found</h1>
-    <p class="text-gray-600 mt-2">This gift link may be incorrect or expired.</p>
-  </div>
-{% else %}
-  <section class="text-center mb-8">
-    <h1 class="text-4xl font-extrabold text-pink-600 mb-2">Happy Birthday! 🎂</h1>
-    <p class="text-gray-700 max-w-2xl mx-auto">{{ note }}</p>
-  </section>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Birthday Wish</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #89f7fe, #66a6ff);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            overflow: hidden;
+            text-align: center;
+        }
+        h1 {
+            font-size: 36px;
+            color: #fff;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 6px rgba(0,0,0,0.3);
+        }
+        p {
+            color: #fff;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        .media {
+            background: white;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0px 6px 20px rgba(0,0,0,0.3);
+            max-width: 500px;
+        }
+        img, video {
+            width: 100%;
+            border-radius: 15px;
+        }
+        /* 🎉 Confetti */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: gold;
+            top: 0;
+            animation: fall 4s linear infinite;
+        }
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(100vh) rotate(720deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>🎂 Happy Birthday {{ user }} 🎉</h1>
+    <p>May your special day be filled with joy, love & happiness! 🥳</p>
 
-  {% if photos %}
-  <section class="mb-10">
-    <h2 class="text-xl font-semibold mb-3">Photos</h2>
-    <div class="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-      {% for p in photos %}
-        <img class="rounded-2xl shadow-soft" src="{{ p }}" loading="lazy"/>
-      {% endfor %}
+    <div class="media">
+        {% if file_url %}
+            {% if file_url.endswith('.mp4') %}
+                <video controls>
+                    <source src="{{ file_url }}" type="video/mp4">
+                </video>
+            {% else %}
+                <img src="{{ file_url }}">
+            {% endif %}
+        {% else %}
+            <p>No media uploaded yet.</p>
+        {% endif %}
     </div>
-  </section>
-  {% endif %}
 
-  {% if videos %}
-  <section class="mb-10">
-    <h2 class="text-xl font-semibold mb-3">Videos</h2>
-    <div class="grid md:grid-cols-2 gap-4">
-      {% for v in videos %}
-        <video class="w-full rounded-2xl shadow-soft" controls>
-          <source src="{{ v }}">
-        </video>
-      {% endfor %}
-    </div>
-  </section>
-  {% endif %}
-
-  {% if audios %}
-  <section class="mb-10">
-    <h2 class="text-xl font-semibold mb-3">Music</h2>
-    <div class="space-y-3">
-      {% for a in audios %}
-        <audio class="w-full" controls>
-          <source src="{{ a }}">
-        </audio>
-      {% endfor %}
-    </div>
-  </section>
-  {% endif %}
-{% endif %}
-{% endblock %}
-
-{% block scripts %}
-<script>
-  // confetti burst
-  (function(){
-    const duration=3500, end=Date.now()+duration;
-    (function frame(){
-      confetti({particleCount:4, spread:70, startVelocity:45, origin:{x:Math.random(), y:1}});
-      if(Date.now()<end) requestAnimationFrame(frame);
-    })();
-  })();
-
-  // floating balloons
-  function spawnBalloons(n=10){
-    const colors=['#f43f5e','#fb7185','#f97316','#f59e0b','#22c55e','#3b82f6','#a855f7'];
-    for(let i=0;i<n;i++){
-      const b=document.createElement('div');
-      b.className='balloon';
-      b.style.left=(Math.random()*100)+'vw';
-      b.style.background=colors[Math.floor(Math.random()*colors.length)];
-      b.style.animationDelay=(Math.random()*4)+'s';
-      document.body.appendChild(b);
-      setTimeout(()=>b.remove(), 12500);
-    }
-  }
-  spawnBalloons(12);
-</script>
-{% endblock %}
+    <!-- 🎉 Confetti Script -->
+    <script>
+        function createConfetti() {
+            const confetti = document.createElement("div");
+            confetti.classList.add("confetti");
+            confetti.style.left = Math.random() * window.innerWidth + "px";
+            confetti.style.backgroundColor = ["red","blue","yellow","green","purple","pink"][Math.floor(Math.random()*6)];
+            confetti.style.width = Math.random() * 8 + 5 + "px";
+            confetti.style.height = confetti.style.width;
+            confetti.style.animationDuration = (Math.random() * 3 + 2) + "s";
+            document.body.appendChild(confetti);
+            setTimeout(() => { confetti.remove(); }, 4000);
+        }
+        setInterval(createConfetti, 200);
+    </script>
+</body>
+</html>

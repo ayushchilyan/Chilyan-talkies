@@ -1,246 +1,318 @@
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
+from flask_socketio import SocketIO, send
 import os
-import uuid
-import datetime
 import sqlite3
-from flask import Flask, redirect, url_for, render_template, request, session, flash, send_from_directory
-from authlib.integrations.flask_client import OAuth
-from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
 
-client_id = os.environ.get("GOOGLE_CLIENT_ID")
-client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
-
-flow = Flow.from_client_config(
-    {
-        "web": {
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "redirect_uris": ["https://your-app.onrender.com/callback"],
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token"
-        }
-    },
-    scopes=["https://www.googleapis.com/auth/userinfo.profile"]
-)
-
-
-# ---------------- App Config ----------------
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, "app.db")
-UPLOAD_ROOT = os.path.join(BASE_DIR, "uploads")
-os.makedirs(UPLOAD_ROOT, exist_ok=True)
-
-ALLOWED_PHOTO = {"png", "jpg", "jpeg", "gif", "webp"}
-ALLOWED_VIDEO = {"mp4", "mov", "m4v", "webm"}
-ALLOWED_AUDIO = {"mp3", "wav", "m4a", "aac"}
-ALLOWED_ALL = ALLOWED_PHOTO | ALLOWED_VIDEO | ALLOWED_AUDIO
 
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "CHANGE_ME_SUPER_SECRET"
-app.config["MAX_CONTENT_LENGTH"] = 64 * 1024 * 1024  # 64 MB
+app.secret_key = "secret"
+socketio = SocketIO(app, cors_allowed_origins="*")
+UPLOAD_FOLDER = "static/uploads"
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
-
-# ---------------- DB Helpers ----------------
-def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
+# ---------------- Database Setup -----------------
 def init_db():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE,
-            name TEXT,
-            email TEXT UNIQUE,
-            password_hash TEXT,
-            dob TEXT,
-            note TEXT DEFAULT 'Happy Birthday 🎂',
-            slug TEXT UNIQUE
-        )
-    """)
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS media (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            kind TEXT NOT NULL,
-            filename TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-    """)
+    # Agar purana db hai to hata de (sirf development me)
+    if os.path.exists("users.db"):
+        os.remove("users.db")
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("""CREATE TABLE users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    fullname TEXT NOT NULL,
+                    dob TEXT NOT NULL,
+                    username TEXT UNIQUE NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    mobile TEXT NOT NULL,
+                    password TEXT NOT NULL,
+                    note TEXT,
+                    file TEXT
+                )""")
+    
+    # Friend requests table
+    c.execute("""CREATE TABLE friend_requests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sender TEXT NOT NULL,
+                    receiver TEXT NOT NULL,
+                    status TEXT DEFAULT 'pending'
+                )""")
+
     conn.commit()
     conn.close()
 
-init_db()
+# ---------------- Serve Uploaded Media -----------------
+@app.route("/uploads/<username>/<media>/<filename>")
+def serve_upload(username, media, filename):
+    folder = os.path.join(app.config["UPLOAD_FOLDER"], username, media)
+    return send_from_directory(folder, filename)
 
-# ---------------- Utilities ----------------
-def user_dirs(username):
-    root = os.path.join(UPLOAD_ROOT, username)
-    photos = os.path.join(root, "photos")
-    videos = os.path.join(root, "videos")
-    audios = os.path.join(root, "audios")
-    for d in (root, photos, videos, audios):
-        os.makedirs(d, exist_ok=True)
-    return {"root": root, "photos": photos, "videos": videos, "audios": audios}
-
-def get_user(username=None, email=None):
-    conn = get_db()
-    if username:
-        row = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-    elif email:
-        row = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-    else:
-        row = None
-    conn.close()
-    return row
-
-def get_user_by_slug(slug):
-    conn = get_db()
-    row = conn.execute("SELECT * FROM users WHERE slug = ?", (slug,)).fetchone()
-    conn.close()
-    return row
-
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_ALL
-
-def classify_ext(ext):
-    ext = ext.lower()
-    if ext in ALLOWED_PHOTO: return "photo"
-    if ext in ALLOWED_VIDEO: return "video"
-    if ext in ALLOWED_AUDIO: return "audio"
-    return None
-
-def save_media(user, file_storage):
-    filename = secure_filename(file_storage.filename)
-    ext = filename.rsplit(".", 1)[1].lower()
-    kind = classify_ext(ext)
-    if not kind: return None, "Invalid file type."
-    stamp = datetime.datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-    final_name = f"{stamp}_{uuid.uuid4().hex[:6]}.{ext}"
-    dirs = user_dirs(user["username"])
-    dest_dir = {"photo": dirs["photos"], "video": dirs["videos"], "audio": dirs["audios"]}[kind]
-    file_storage.save(os.path.join(dest_dir, final_name))
-    conn = get_db()
-    conn.execute(
-        "INSERT INTO media (user_id, kind, filename, created_at) VALUES (?,?,?,?)",
-        (user["id"], kind, final_name, datetime.datetime.utcnow().isoformat())
-    )
-    conn.commit()
-    conn.close()
-    return kind, None
-
-# ---------------- Routes ----------------
+# ---------------- Home -----------------
 @app.route("/")
 def home():
-    if "user" in session:
-        return f"Welcome {session['user']['name']}! Your DOB: {session['user']['dob']}"
-    return render_template("home.html")
+    return redirect(url_for("login"))
 
+# ---------------- Register -----------------
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
-        name = request.form["name"]
-        email = request.form["email"]
+        fullname = request.form["fullname"]
         dob = request.form["dob"]
-        conn = get_db()
+        username = request.form["username"]
+        email = request.form["email"]
+        mobile = request.form["mobile"]
+        password = request.form["password"]
+
+        if len(password) < 6:
+            return "❌ Password must be at least 6 characters long!"
+
+        conn = sqlite3.connect("users.db")
+        c = conn.cursor()
         try:
-            conn.execute("INSERT INTO users (name,email,dob,slug) VALUES (?,?,?,?)",
-                         (name, email, dob, f"{name}-{uuid.uuid4().hex[:6]}"))
+            c.execute("""INSERT INTO users (fullname, dob, username, email, mobile, password) 
+                         VALUES (?, ?, ?, ?, ?, ?)""", 
+                         (fullname, dob, username, email, mobile, password))
             conn.commit()
         except sqlite3.IntegrityError:
-            flash("Email already registered!", "error")
-            return redirect(url_for("register"))
-        conn.close()
+            return "⚠️ Username or Email already exists!"
+        finally:
+            conn.close()
+
         return redirect(url_for("login"))
+    
     return render_template("register.html")
 
-# ---------------- OAuth Setup ----------------
-oauth = OAuth(app)
-oauth.register(
-    name='google',
-    client_id=GOOGLE_CLIENT_ID,
-    client_secret=GOOGLE_CLIENT_SECRET,
-    access_token_url="https://accounts.google.com/o/oauth2/token",
-    authorize_url="https://accounts.google.com/o/oauth2/auth",
-    api_base_url="https://www.googleapis.com/oauth2/v1/",
-    client_kwargs={"scope": "openid email profile"},
-)
-
-# ---------------- Routes ----------------
-@app.route("/login")
+# ---------------- Login -----------------
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    redirect_uri = url_for("authorize", _external=True)
-    return oauth.google.authorize_redirect(redirect_uri)   # <- fix here
-
-@app.route("/authorize")
-def authorize():
-    token = oauth.google.authorize_access_token()         # <- fix here
-    user_info = oauth.google.parse_id_token(token)        # <- fix here
-    email = user_info["email"]
-    user = get_user(email=email)
-    if user:
-        session["user"] = {
-            "name": user["name"],
-            "email": user["email"],
-            "dob": user["dob"],
-            "username": user["username"]
-        }
-        return redirect(url_for("home"))
-    else:
-        session["temp_email"] = email
-        return redirect(url_for("complete_registration"))
-
-@app.route("/complete_registration", methods=["GET", "POST"])
-def complete_registration():
-    if "temp_email" not in session:
-        return redirect(url_for("home"))
     if request.method == "POST":
-        name = request.form["name"]
-        dob = request.form["dob"]
-        email = session["temp_email"]
-        slug = f"{name}-{uuid.uuid4().hex[:6]}"
-        conn = get_db()
-        conn.execute("INSERT INTO users (name,email,dob,slug) VALUES (?,?,?,?)", (name,email,dob,slug))
-        conn.commit()
+        username = request.form["username"]
+        password = request.form["password"]
+
+        conn = sqlite3.connect("users.db")
+        c = conn.cursor()
+        c.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
+        user = c.fetchone()
         conn.close()
-        session["user"] = {"name": name, "email": email, "dob": dob, "username": name}
-        session.pop("temp_email", None)
-        return redirect(url_for("home"))
-    return render_template("complete_registration.html", email=session["temp_email"])
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
+        if user:
+            session["user"] = username
+            return redirect(url_for("dashboard"))
+        else:
+            return "❌ Invalid Credentials! Try again."
+    
+    return render_template("index.html")
 
-@app.route("/dashboard", methods=["GET","POST"])
+# ---------------- Dashboard -----------------
+@app.route("/dashboard", methods=["GET", "POST"])
 def dashboard():
     if "user" not in session:
         return redirect(url_for("login"))
-    user = get_user(username=session["user"]["username"])
-    # ... Dashboard logic (upload files, notes, list media) ...
-    return render_template("dashboard.html")
 
-@app.route("/w/<slug>")
-def wish_public(slug):
-    user = get_user_by_slug(slug)
-    if not user:
-        return render_template("wish.html", not_found=True), 404
-    dirs = user_dirs(user["username"])
-    photo_urls = [url_for("serve_upload", username=user["username"], media="photos", filename=f)
-                  for f in sorted(os.listdir(dirs["photos"])) if not f.startswith(".")]
-    return render_template("wish.html", not_found=False, note=user["note"], photos=photo_urls)
+    username = session["user"]
+    user_dir = os.path.join(app.config["UPLOAD_FOLDER"], username)
+    photos_dir = os.path.join(user_dir, "photos")
+    videos_dir = os.path.join(user_dir, "videos")
+    audios_dir = os.path.join(user_dir, "audios")
 
-@app.route("/uploads/<username>/<media>/<path:filename>")
-def serve_upload(username, media, filename):
-    dirs = user_dirs(username)
-    base = {"photos": dirs["photos"], "videos": dirs["videos"], "audios": dirs["audios"]}.get(media)
-    if not base:
-        return "Not found", 404
-    return send_from_directory(base, filename, as_attachment=False)
+    for d in [photos_dir, videos_dir, audios_dir]:
+        os.makedirs(d, exist_ok=True)
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("SELECT note FROM users WHERE username=?", (username,))
+    row = c.fetchone()
+    note = row[0] if row else ""
+
+    share_url = request.host_url + "wish/" + username
+
+    if request.method == "POST":
+        # Note save
+        if "note" in request.form:
+            note = request.form["note"]
+            c.execute("UPDATE users SET note=? WHERE username=?", (note, username))
+            conn.commit()
+
+        # Photo upload
+        if "photo_file" in request.files:
+            f = request.files["photo_file"]
+            if f.filename:
+                f.save(os.path.join(photos_dir, f.filename))
+
+        # Video upload
+        if "video_file" in request.files:
+            f = request.files["video_file"]
+            if f.filename:
+                f.save(os.path.join(videos_dir, f.filename))
+
+        # Audio upload
+        if "audio_file" in request.files:
+            f = request.files["audio_file"]
+            if f.filename:
+                f.save(os.path.join(audios_dir, f.filename))
+
+    conn.close()
+
+    photos = [{"filename": f} for f in os.listdir(photos_dir)]
+    videos = [{"filename": f} for f in os.listdir(videos_dir)]
+    audios = [{"filename": f} for f in os.listdir(audios_dir)]
+
+    return render_template(
+    "dashboard.html",
+    username=username,
+    note=note,
+    share_url=share_url,
+    photos=photos,
+    videos=videos,
+    audios=audios
+)
+
+#friend list dikhana
+
+
+@app.route("/users")
+def users_list():
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("SELECT username, fullname FROM users WHERE username != ?", (session["user"],))
+    users = c.fetchall()
+    conn.close()
+
+    return render_template("users.html", users=users)
+
+
+# request dikhana
+
+@app.route("/send_request/<receiver>")
+def send_request(receiver):
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("INSERT INTO friend_requests (sender, receiver, status) VALUES (?, ?, ?)",
+              (session["user"], receiver, "pending"))
+    conn.commit()
+    conn.close()
+
+    return redirect(url_for("users_list"))
+
+
+#request pending
+
+@app.route("/requests")
+def friend_requests():
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("SELECT id, sender FROM friend_requests WHERE receiver=? AND status='pending'", (session["user"],))
+    requests = c.fetchall()
+    conn.close()
+
+    return render_template("requests.html", requests=requests)
+
+#accept/reject
+
+
+@app.route("/accept/<int:req_id>")
+def accept_request(req_id):
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("UPDATE friend_requests SET status='accepted' WHERE id=?", (req_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("friend_requests"))
+
+@app.route("/reject/<int:req_id>")
+def reject_request(req_id):
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("UPDATE friend_requests SET status='rejected' WHERE id=?", (req_id,))
+    conn.commit()
+    conn.close()
+    return redirect(url_for("friend_requests"))
+
+
+# Friends list (accepted only)
+
+@app.route("/friends")
+def friends_list():
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("""SELECT sender, receiver FROM friend_requests 
+                 WHERE (sender=? OR receiver=?) AND status='accepted'""",
+              (session["user"], session["user"]))
+    data = c.fetchall()
+    conn.close()
+
+    # Current user ka naam hata kar dusra dikhana
+    friends = [u[0] if u[0] != session["user"] else u[1] for u in data]
+
+    return render_template("friends.html", friends=friends)
+
+
+
+# ---------------- Wish Page -----------------@app.route("/wish/<username>")
+def wish(username):
+    conn = sqlite3.connect("users.db")
+    c = conn.cursor()
+    c.execute("SELECT fullname, note, file FROM users WHERE username=?", (username,))
+    data = c.fetchone()
+    conn.close()
+
+    if not data:
+        return "User not found!"
+
+    fullname, note, file = data
+    file_url = None
+    if file:
+        file_url = url_for("static", filename="uploads/" + file)
+
+    # user ke uploads dikhane ke liye
+    user_dir = os.path.join(app.config["UPLOAD_FOLDER"], username)
+    photos = [{"filename": f} for f in os.listdir(os.path.join(user_dir,"photos"))] if os.path.exists(os.path.join(user_dir,"photos")) else []
+    videos = [{"filename": f} for f in os.listdir(os.path.join(user_dir,"videos"))] if os.path.exists(os.path.join(user_dir,"videos")) else []
+    audios = [{"filename": f} for f in os.listdir(os.path.join(user_dir,"audios"))] if os.path.exists(os.path.join(user_dir,"audios")) else []
+
+    return render_template("wish.html",
+                           user=fullname,
+                           note=note,
+                           file_url=file_url,
+                           username=username,
+                           photos=photos,
+                           videos=videos,
+                           audios=audios)
+
+
+# ---------------- Chat -----------------
+@app.route("/chat")
+def chat():
+    if "user" in session:
+        return render_template("chat.html", user=session["user"])
+    return redirect(url_for("login"))
+
+# --- SocketIO events ---
+@socketio.on("message")
+def handle_message(msg):
+    print("Message: " + msg)
+    send(msg, broadcast=True)
+
+# ---------------- Logout -----------------
+@app.route("/logout")
+def logout():
+    session.pop("user", None)
+    return redirect(url_for("login"))
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+    init_db()
+    socketio.run(app, debug=True)
