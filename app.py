@@ -36,7 +36,7 @@ def handle_exception(e):
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    # users table
+    # ✅ Always ensure users table exists
     c.execute("""CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     fullname TEXT NOT NULL,
@@ -48,7 +48,7 @@ def init_db():
                     note TEXT,
                     file TEXT
                 )""")
-    # friend_requests table
+    # ✅ Always ensure friend_requests table exists
     c.execute("""CREATE TABLE IF NOT EXISTS friend_requests (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     sender TEXT NOT NULL,
@@ -306,6 +306,8 @@ def logout():
     return redirect(url_for("login"))
 
 # ---------------- Main -----------------
+# ✅ Call init_db when app starts (for Render/Gunicorn)
+init_db()
+
 if __name__ == "__main__":
-    init_db()
     socketio.run(app, host="0.0.0.0", port=5000)
