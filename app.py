@@ -1,18 +1,13 @@
-import eventlet
-eventlet.monkey_patch()
-
-from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
-from flask_socketio import SocketIO, send
 import os
-import sqlite3
+import psycopg2
 import logging
 import traceback
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
+from flask_socketio import SocketIO, send
 
 # ---------------- Config -----------------
-DB_PATH = os.environ.get("DB_PATH", "/tmp/users.db")
+DATABASE_URL = os.environ.get("DATABASE_URL")  # Render se milega
 UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/tmp/uploads")
-
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 app = Flask(__name__)
 app.secret_key = "secret"
@@ -33,12 +28,16 @@ def handle_exception(e):
     return "Internal Server Error - Check Logs", 500
 
 # ---------------- Database Setup -----------------
+def get_db_connection():
+    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+    return conn
+
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     c = conn.cursor()
-    # ✅ Always ensure users table exists
+    # users table
     c.execute("""CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id SERIAL PRIMARY KEY,
                     fullname TEXT NOT NULL,
                     dob TEXT NOT NULL,
                     username TEXT UNIQUE NOT NULL,
@@ -48,14 +47,15 @@ def init_db():
                     note TEXT,
                     file TEXT
                 )""")
-    # ✅ Always ensure friend_requests table exists
+    # friend_requests table
     c.execute("""CREATE TABLE IF NOT EXISTS friend_requests (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    id SERIAL PRIMARY KEY,
                     sender TEXT NOT NULL,
                     receiver TEXT NOT NULL,
                     status TEXT DEFAULT 'pending'
                 )""")
     conn.commit()
+    c.close()
     conn.close()
 
 # ---------------- Serve Uploaded Media -----------------
@@ -83,16 +83,18 @@ def register():
         if len(password) < 6:
             return "❌ Password must be at least 6 characters long!"
 
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         c = conn.cursor()
         try:
             c.execute("""INSERT INTO users (fullname, dob, username, email, mobile, password) 
-                         VALUES (?, ?, ?, ?, ?, ?)""",
+                         VALUES (%s, %s, %s, %s, %s, %s)""",
                       (fullname, dob, username, email, mobile, password))
             conn.commit()
-        except sqlite3.IntegrityError:
+        except psycopg2.IntegrityError:
+            conn.rollback()
             return "⚠️ Username or Email already exists!"
         finally:
+            c.close()
             conn.close()
 
         return redirect(url_for("login"))
@@ -106,10 +108,11 @@ def login():
         username = request.form["username"]
         password = request.form["password"]
 
-        conn = sqlite3.connect(DB_PATH)
+        conn = get_db_connection()
         c = conn.cursor()
-        c.execute("SELECT * FROM users WHERE username=? AND password=?", (username, password))
+        c.execute("SELECT * FROM users WHERE username=%s AND password=%s", (username, password))
         user = c.fetchone()
+        c.close()
         conn.close()
 
         if user:
@@ -135,9 +138,9 @@ def dashboard():
     for d in [photos_dir, videos_dir, audios_dir]:
         os.makedirs(d, exist_ok=True)
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT note FROM users WHERE username=?", (username,))
+    c.execute("SELECT note FROM users WHERE username=%s", (username,))
     row = c.fetchone()
     note = row[0] if row else ""
 
@@ -146,7 +149,7 @@ def dashboard():
     if request.method == "POST":
         if "note" in request.form:
             note = request.form["note"]
-            c.execute("UPDATE users SET note=? WHERE username=?", (note, username))
+            c.execute("UPDATE users SET note=%s WHERE username=%s", (note, username))
             conn.commit()
 
         if "photo_file" in request.files:
@@ -186,10 +189,11 @@ def users_list():
     if "user" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT username, fullname FROM users WHERE username != ?", (session["user"],))
+    c.execute("SELECT username, fullname FROM users WHERE username != %s", (session["user"],))
     users = c.fetchall()
+    c.close()
     conn.close()
 
     return render_template("users.html", users=users)
@@ -199,11 +203,12 @@ def send_request(receiver):
     if "user" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute("INSERT INTO friend_requests (sender, receiver, status) VALUES (?, ?, ?)",
+    c.execute("INSERT INTO friend_requests (sender, receiver, status) VALUES (%s, %s, %s)",
               (session["user"], receiver, "pending"))
     conn.commit()
+    c.close()
     conn.close()
 
     return redirect(url_for("users_list"))
@@ -213,29 +218,32 @@ def friend_requests():
     if "user" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT id, sender FROM friend_requests WHERE receiver=? AND status='pending'", (session["user"],))
+    c.execute("SELECT id, sender FROM friend_requests WHERE receiver=%s AND status='pending'", (session["user"],))
     requests = c.fetchall()
+    c.close()
     conn.close()
 
     return render_template("requests.html", requests=requests)
 
 @app.route("/accept/<int:req_id>")
 def accept_request(req_id):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute("UPDATE friend_requests SET status='accepted' WHERE id=?", (req_id,))
+    c.execute("UPDATE friend_requests SET status='accepted' WHERE id=%s", (req_id,))
     conn.commit()
+    c.close()
     conn.close()
     return redirect(url_for("friend_requests"))
 
 @app.route("/reject/<int:req_id>")
 def reject_request(req_id):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute("UPDATE friend_requests SET status='rejected' WHERE id=?", (req_id,))
+    c.execute("UPDATE friend_requests SET status='rejected' WHERE id=%s", (req_id,))
     conn.commit()
+    c.close()
     conn.close()
     return redirect(url_for("friend_requests"))
 
@@ -244,12 +252,13 @@ def friends_list():
     if "user" not in session:
         return redirect(url_for("login"))
 
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute("""SELECT sender, receiver FROM friend_requests 
-                 WHERE (sender=? OR receiver=?) AND status='accepted'""",
+                 WHERE (sender=%s OR receiver=%s) AND status='accepted'""",
               (session["user"], session["user"]))
     data = c.fetchall()
+    c.close()
     conn.close()
 
     friends = [u[0] if u[0] != session["user"] else u[1] for u in data]
@@ -259,10 +268,11 @@ def friends_list():
 # ---------------- Wish Page -----------------
 @app.route("/wish/<username>")
 def wish(username):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT fullname, note, file FROM users WHERE username=?", (username,))
+    c.execute("SELECT fullname, note, file FROM users WHERE username=%s", (username,))
     data = c.fetchone()
+    c.close()
     conn.close()
 
     if not data:
@@ -306,7 +316,7 @@ def logout():
     return redirect(url_for("login"))
 
 # ---------------- Main -----------------
-# ✅ Call init_db when app starts (for Render/Gunicorn)
+# ✅ Call init_db when app starts
 init_db()
 
 if __name__ == "__main__":
