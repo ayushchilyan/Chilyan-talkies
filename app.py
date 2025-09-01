@@ -5,6 +5,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 from flask_socketio import SocketIO, send
 import os
 import sqlite3
+import logging
+import traceback
 
 # ---------------- Config -----------------
 DB_PATH = os.environ.get("DB_PATH", "/tmp/users.db")
@@ -17,11 +19,24 @@ app.secret_key = "secret"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+# ---------------- Logging Setup -----------------
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger("werkzeug")
+log.setLevel(logging.DEBUG)
+
+# ---------------- Error Handler -----------------
+@app.errorhandler(Exception)
+def handle_exception(e):
+    print("🔥 ERROR TRACEBACK START 🔥")
+    traceback.print_exc()
+    print("🔥 ERROR TRACEBACK END 🔥")
+    return "Internal Server Error - Check Logs", 500
+
 # ---------------- Database Setup -----------------
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    # ✅ Users table
+    # users table
     c.execute("""CREATE TABLE IF NOT EXISTS users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     fullname TEXT NOT NULL,
@@ -33,7 +48,7 @@ def init_db():
                     note TEXT,
                     file TEXT
                 )""")
-    # ✅ Friend requests table
+    # friend_requests table
     c.execute("""CREATE TABLE IF NOT EXISTS friend_requests (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     sender TEXT NOT NULL,
@@ -129,25 +144,21 @@ def dashboard():
     share_url = request.host_url + "wish/" + username
 
     if request.method == "POST":
-        # Note save
         if "note" in request.form:
             note = request.form["note"]
             c.execute("UPDATE users SET note=? WHERE username=?", (note, username))
             conn.commit()
 
-        # Photo upload
         if "photo_file" in request.files:
             f = request.files["photo_file"]
             if f.filename:
                 f.save(os.path.join(photos_dir, f.filename))
 
-        # Video upload
         if "video_file" in request.files:
             f = request.files["video_file"]
             if f.filename:
                 f.save(os.path.join(videos_dir, f.filename))
 
-        # Audio upload
         if "audio_file" in request.files:
             f = request.files["audio_file"]
             if f.filename:
@@ -297,4 +308,4 @@ def logout():
 # ---------------- Main -----------------
 if __name__ == "__main__":
     init_db()
-    socketio.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    socketio.run(app, host="0.0.0.0", port=5000)
