@@ -19,28 +19,29 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 # ---------------- Database Setup -----------------
 def init_db():
-    if not os.path.exists(DB_PATH):  # DB sirf tab create karo jab missing ho
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("""CREATE TABLE users (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        fullname TEXT NOT NULL,
-                        dob TEXT NOT NULL,
-                        username TEXT UNIQUE NOT NULL,
-                        email TEXT UNIQUE NOT NULL,
-                        mobile TEXT NOT NULL,
-                        password TEXT NOT NULL,
-                        note TEXT,
-                        file TEXT
-                    )""")
-        c.execute("""CREATE TABLE friend_requests (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        sender TEXT NOT NULL,
-                        receiver TEXT NOT NULL,
-                        status TEXT DEFAULT 'pending'
-                    )""")
-        conn.commit()
-        conn.close()
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    # ✅ Users table
+    c.execute("""CREATE TABLE IF NOT EXISTS users (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    fullname TEXT NOT NULL,
+                    dob TEXT NOT NULL,
+                    username TEXT UNIQUE NOT NULL,
+                    email TEXT UNIQUE NOT NULL,
+                    mobile TEXT NOT NULL,
+                    password TEXT NOT NULL,
+                    note TEXT,
+                    file TEXT
+                )""")
+    # ✅ Friend requests table
+    c.execute("""CREATE TABLE IF NOT EXISTS friend_requests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    sender TEXT NOT NULL,
+                    receiver TEXT NOT NULL,
+                    status TEXT DEFAULT 'pending'
+                )""")
+    conn.commit()
+    conn.close()
 
 # ---------------- Serve Uploaded Media -----------------
 @app.route("/uploads/<username>/<media>/<filename>")
@@ -296,4 +297,4 @@ def logout():
 # ---------------- Main -----------------
 if __name__ == "__main__":
     init_db()
-    socketio.run(app, host="0.0.0.0", port=5000)
+    socketio.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
