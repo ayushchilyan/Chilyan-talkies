@@ -59,6 +59,19 @@
         a:hover {
             text-decoration: underline;
         }
+        .back-btn {
+            margin-top: 15px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            background: #6c757d;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .back-btn:hover {
+            background: #495057;
+        }
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
@@ -68,16 +81,18 @@
 <body>
     <div class="register-card">
         <h2>📝 Create Your Account</h2>
-        <form method="POST">
+        <form method="POST" action="{{ url_for('register') }}">
             <input type="text" name="fullname" placeholder="Full Name" required><br>
             <input type="date" name="dob" required><br>
             <input type="text" name="username" placeholder="Username" required><br>
             <input type="email" name="email" placeholder="Email" required><br>
-            <input type="text" name="mobile" placeholder="Mobile Number" required><br>
-            <input type="password" name="password" placeholder="Password (min 6 chars)" required><br>
+            <input type="tel" name="mobile" placeholder="Mobile Number" pattern="[0-9]{10}" required><br>
+            <input type="password" name="password" placeholder="Password (min 6 chars)" minlength="6" required><br>
             <button type="submit">Register</button>
         </form>
         <a href="{{ url_for('login') }}">🔑 Already have an account? Login</a>
+
+        <button onclick="window.history.back()" class="back-btn">⬅️ Back</button>
     </div>
 </body>
 </html>
