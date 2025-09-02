@@ -56,4 +56,4 @@ Werkzeug==3.0.3
 wsproto==1.2.0
 WTForms==3.2.1
 yarl==1.20.1
-psycopg2-binary==2.9.9
+psycopg[binary]==3.2.1
