@@ -6,7 +6,7 @@ from flask import Flask, render_template, request, redirect, url_for, session, s
 from flask_socketio import SocketIO, send
 
 # ---------------- Config -----------------
-DATABASE_URL = os.environ.get("DATABASE_URL")  # Render se milega
+DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://user:pass@localhost:5432/dbname")
 UPLOAD_FOLDER = os.environ.get("UPLOAD_FOLDER", "/tmp/uploads")
 
 app = Flask(__name__)
@@ -44,8 +44,7 @@ def init_db():
                     email TEXT UNIQUE NOT NULL,
                     mobile TEXT NOT NULL,
                     password TEXT NOT NULL,
-                    note TEXT,
-                    file TEXT
+                    note TEXT
                 )""")
     # friend_requests table
     c.execute("""CREATE TABLE IF NOT EXISTS friend_requests (
@@ -90,7 +89,7 @@ def register():
                          VALUES (%s, %s, %s, %s, %s, %s)""",
                       (fullname, dob, username, email, mobile, password))
             conn.commit()
-        except psycopg.IntegrityError:
+        except psycopg.errors.UniqueViolation:
             conn.rollback()
             return "⚠️ Username or Email already exists!"
         finally:
@@ -270,7 +269,7 @@ def friends_list():
 def wish(username):
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute("SELECT fullname, note, file FROM users WHERE username=%s", (username,))
+    c.execute("SELECT fullname, note FROM users WHERE username=%s", (username,))
     data = c.fetchone()
     c.close()
     conn.close()
@@ -278,10 +277,7 @@ def wish(username):
     if not data:
         return "User not found!"
 
-    fullname, note, file = data
-    file_url = None
-    if file:
-        file_url = url_for("static", filename="uploads/" + file)
+    fullname, note = data
 
     user_dir = os.path.join(app.config["UPLOAD_FOLDER"], username)
     photos = [{"filename": f} for f in os.listdir(os.path.join(user_dir, "photos"))] if os.path.exists(os.path.join(user_dir, "photos")) else []
@@ -291,7 +287,6 @@ def wish(username):
     return render_template("wish.html",
                            user=fullname,
                            note=note,
-                           file_url=file_url,
                            username=username,
                            photos=photos,
                            videos=videos,
