@@ -1,5 +1,5 @@
 import os
-import psycopg2
+import psycopg
 import logging
 import traceback
 from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
@@ -29,7 +29,7 @@ def handle_exception(e):
 
 # ---------------- Database Setup -----------------
 def get_db_connection():
-    conn = psycopg2.connect(DATABASE_URL, sslmode="require")
+    conn = psycopg.connect(DATABASE_URL, sslmode="require")
     return conn
 
 def init_db():
@@ -90,7 +90,7 @@ def register():
                          VALUES (%s, %s, %s, %s, %s, %s)""",
                       (fullname, dob, username, email, mobile, password))
             conn.commit()
-        except psycopg2.IntegrityError:
+        except psycopg.IntegrityError:
             conn.rollback()
             return "⚠️ Username or Email already exists!"
         finally:
