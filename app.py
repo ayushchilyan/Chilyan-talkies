@@ -104,6 +104,24 @@ def register():
 
     return render_template("register.html")
 
+#----------------Reset_Password------------------------
+
+
+@app.route("/reset_password", methods=["GET", "POST"])
+def reset_password():
+    if request.method == "POST":
+        username = request.form["username"]
+        new_password = request.form["new_password"]
+
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("UPDATE users SET password=? WHERE username=?", (new_password, username))
+        conn.commit()
+        conn.close()
+
+        return "✅ Password reset successful!"
+    return render_template("reset_password.html")
+
 # ---------------- Login -----------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
