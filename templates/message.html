@@ -1,0 +1,14 @@
+<!-- message.html -->
+<div class="message {% if message.sender==current_user %}sent{% else %}received{% endif %}">
+<p>{{ message.content }}</p>
+<span>{{ message.timestamp }}</span>
+</div>
+
+
+<!-- post_item.html -->
+<div class="post">
+<h4>{{ post.username }}</h4>
+{% if post.file %}<img src="/uploads/{{ post.file }}" alt="post">{% endif %}
+<p>{{ post.caption }}</p>
+<span>{{ post.timestamp }}</span>
+</div>

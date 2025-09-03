@@ -1,28 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Friend Requests</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-<div class="container mt-5">
-  <h2 class="text-center mb-4">📩 Friend Requests</h2>
-  <div class="list-group">
-    {% for id, sender in requests %}
-    <div class="list-group-item d-flex justify-content-between align-items-center">
-      <strong>@{{ sender }}</strong>
-      <div>
-        <a href="{{ url_for('accept_request', req_id=id) }}" class="btn btn-success btn-sm">✅ Accept</a>
-        <a href="{{ url_for('reject_request', req_id=id) }}" class="btn btn-danger btn-sm">❌ Reject</a>
-      </div>
-    </div>
-    {% else %}
-    <p class="text-center text-muted">No pending requests.</p>
-    {% endfor %}
+<!-- requests.html -->
+{% extends 'base.html' %}
+{% block title %}Friend Requests{% endblock %}
+{% block body %}
+<div class="dashboard">
+  <div class="sidebar">
+    <a href="{{ url_for('dashboard') }}">Dashboard</a><br>
+    <a href="{{ url_for('users_list') }}">All Users</a><br>
+    <a href="{{ url_for('logout') }}">Logout</a>
+  </div>
+  <div class="main">
+    <h2>Incoming Friend Requests</h2>
+    <ul>
+      {% for r in requests %}
+      <li>
+        {{ r[1] }}
+        <a href="{{ url_for('accept_request', req_id=r[0]) }}">Accept</a> |
+        <a href="{{ url_for('reject_request', req_id=r[0]) }}">Reject</a>
+      </li>
+      {% endfor %}
+    </ul>
   </div>
 </div>
-<button onclick="window.history.back()">⬅️ Back</button>
-
-</body>
-</html>
+{% endblock %}

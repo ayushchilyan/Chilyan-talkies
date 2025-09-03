@@ -1,0 +1,18 @@
+<!-- login.html -->
+{% extends 'base.html' %}
+{% block title %}Login{% endblock %}
+
+{% block body %}
+<div class="auth-container">
+  <h2>Login</h2>
+  <form method="POST">
+    <input name="username" placeholder="Username" required><br>
+    <input name="password" type="password" placeholder="Password" required><br>
+    <button type="submit">Login</button>
+  </form>
+  <p style="margin-top:15px;">
+    <a href="{{ url_for('register') }}">Register</a> •
+    <a href="{{ url_for('verify') }}">Verify OTP</a>
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,102 @@
+/* General */
+body {
+    font-family: Arial, sans-serif;
+    background: #f0f2f5;
+    margin: 0;
+    padding: 0;
+}
+
+a { text-decoration: none; color: #075E54; }
+h2, h3 { margin: 0 0 10px 0; }
+
+/* Auth Forms */
+.auth-container {
+    width: 350px;
+    margin: 80px auto;
+    padding: 30px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.auth-container input {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+.auth-container button {
+    width: 100%;
+    padding: 10px;
+    background: #25D366;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+/* Dashboard / Sidebar */
+.dashboard {
+    display: flex;
+    min-height: 100vh;
+}
+.sidebar {
+    width: 250px;
+    background: #075E54;
+    color: #fff;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+.sidebar h3 { color: #fff; }
+.sidebar ul { list-style: none; padding: 0; }
+.sidebar ul li { margin: 10px 0; }
+.sidebar ul li a { color: #fff; }
+.sidebar a.sidebar-link { color: #fff; margin-top: 15px; display: inline-block; }
+
+/* Main Content */
+.main {
+    flex: 1;
+    padding: 30px;
+    background: #ECE5DD;
+}
+
+/* Lists: Friends / Requests / All Users */
+.main ul { list-style: none; padding: 0; }
+.main ul li {
+    background: #fff;
+    padding: 10px 15px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+.main ul li a {
+    background: #25D366;
+    color: #fff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+/* Chat */
+.chat-window { display: flex; flex-direction: column; height: 80vh; }
+.messages { flex: 1; overflow-y: auto; margin-bottom: 10px; }
+.message { padding: 8px 12px; border-radius: 15px; margin: 5px 0; max-width: 60%; }
+.message.sent { background: #DCF8C6; align-self: flex-end; }
+.message.received { background: #fff; align-self: flex-start; }
+
+/* Feed / Posts */
+.posts { max-width: 600px; margin: 30px auto; }
+.post { background: #fff; padding: 15px; margin-bottom: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+.post img { max-width: 100%; border-radius: 10px; margin: 10px 0; }
+
+/* Profile */
+.profile { max-width: 400px; margin: 50px auto; text-align: center; background: #fff; padding: 20px; border-radius: 10px; }
+.profile img.profile-pic { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; margin-bottom: 10px; }
+
+/* Buttons in Request List */
+.main ul li .accept-btn { background: #25D366; margin-left: 5px; }
+.main ul li .reject-btn { background: #FF3D00; margin-left: 5px; }

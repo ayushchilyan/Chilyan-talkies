@@ -1,211 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Live Chat</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <style>
-    body {
-      background: linear-gradient(135deg, #6a11cb, #2575fc);
-      height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-family: Arial, sans-serif;
-    }
-    .chat-container {
-      width: 90%;
-      max-width: 900px;
-      background: #fff;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0px 8px 20px rgba(0,0,0,0.2);
-      display: flex;
-      flex-direction: column;
-    }
-    .chat-header {
-      background: #2575fc;
-      color: #fff;
-      padding: 15px;
-      text-align: center;
-      font-size: 1.3rem;
-      font-weight: bold;
-    }
-    .friends-list {
-      display: flex;
-      overflow-x: auto;
-      background: #f0f0f0;
-      padding: 10px;
-      border-bottom: 1px solid #ddd;
-    }
-    .friend {
-      background: #6d62d5;
-      color: #fff;
-      padding: 5px 10px;
-      border-radius: 10px;
-      margin-right: 10px;
-      cursor: pointer;
-    }
-    .friend.active {
-      background: #0d7d47;
-    }
-    .chat-box {
-      flex: 1;
-      padding: 15px;
-      overflow-y: auto;
-      background: #f7f7f7;
-    }
-    .msg {
-      margin: 8px 0;
-      padding: 10px 15px;
-      border-radius: 15px;
-      max-width: 70%;
-      word-wrap: break-word;
-    }
-    .msg.me {
-      background: #2575fc;
-      color: #fff;
-      margin-left: auto;
-      text-align: right;
-    }
-    .msg.other {
-      background: #e5e5ea;
-      color: #000;
-      margin-right: auto;
-      text-align: left;
-    }
-    .chat-input {
-      display: flex;
-      border-top: 1px solid #ddd;
-    }
-    .chat-input input {
-      flex: 1;
-      border: none;
-      padding: 15px;
-      font-size: 1rem;
-    }
-    .chat-input button {
-      background: #2575fc;
-      color: #fff;
-      border: none;
-      padding: 0 20px;
-      cursor: pointer;
-    }
-    .chat-input button:hover {
-      background: #1b5ed9;
-    }
-    .back-btn {
-      margin: 10px;
-      background: #eee;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/static/styles.css">
+<title>Chat with {{ friend }}</title>
 </head>
 <body>
-  <div class="chat-container">
-    <div class="chat-header">
-      💬 Live Chat - {{ user }}
+<div class="chat-window">
+    <h3>Chat with {{ friend }}</h3>
+    <div id="messages" class="messages">
+        {% for msg in messages %}
+        <div class="message {% if msg.sender==user %}sent{% else %}received{% endif %}">
+            <p>{{ msg.message }}</p>
+            <span>{{ msg.timestamp }}</span>
+        </div>
+        {% endfor %}
     </div>
-
-    <div class="friends-list" id="friendsList">
-      {% for friend in friends %}
-        <div class="friend" onclick="selectFriend('{{ friend }}')" id="friend-{{ friend }}">{{ friend }}</div>
-      {% endfor %}
-    </div>
-
-    <div id="chat-box" class="chat-box"></div>
-
-    <div class="chat-input">
-      <input id="myMessage" type="text" placeholder="Type a message..." onkeypress="if(event.key==='Enter'){sendMessage()}">
-      <button onclick="sendMessage()">Send</button>
-    </div>
-  </div>
-
-  <button class="back-btn" onclick="window.history.back()">⬅️ Back</button>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
-  <script>
-    var socket = io();
-    var chatBox = document.getElementById("chat-box");
-    var currentFriend = null;
-
-    function selectFriend(friend) {
-      currentFriend = friend;
-      document.querySelectorAll(".friend").forEach(f => f.classList.remove("active"));
-      document.getElementById("friend-" + friend).classList.add("active");
-      chatBox.innerHTML = ""; // clear old messages
-    }
-
-    socket.on("private_message", function(msg){
-      if(currentFriend && (msg.from === currentFriend || msg.from === "{{ user }}")){
-        let div = document.createElement("div");
-        div.classList.add("msg");
-        div.classList.add(msg.from === "{{ user }}" ? "me" : "other");
-        div.textContent = msg.from + ": " + msg.message;
-        chatBox.appendChild(div);
-        chatBox.scrollTop = chatBox.scrollHeight;
-      }
-    });
-
-    function sendMessage(){
-      let msgInput = document.getElementById("myMessage");
-      let msg = msgInput.value.trim();
-      if(msg && currentFriend){
-        socket.emit("private_message", {"to": currentFriend, "message": msg});
-        msgInput.value = "";
-      } else if(!currentFriend){
-        alert("Please select a friend first!");
-      }
-    }
-  </script>
-
-
+    <form id="chatForm">
+        <input id="msgInput" autocomplete="off" placeholder="Type a message">
+        <button>Send</button>
+    </form>
+</div>
 
 <script>
-var socket = io();
-var currentFriend = null;
-var chatBox = document.getElementById("chat-box");
-
-function selectFriend(friendName){
-    currentFriend = friendName;
-    document.getElementById("chat-with").innerText = "💬 Chat with " + friendName;
-    chatBox.innerHTML = ""; // previous messages clear
-}
-
-function sendMessage(){
-    var msgInput = document.getElementById("msg-input");
-    var msg = msgInput.value.trim();
-    if(msg && currentFriend){
-        var data = {
-            from: "{{ user }}",
-            to: currentFriend,
-            text: msg
-        };
-        socket.emit("private_message", data);
-        addMessage(data, true); // show in your window
-        msgInput.value = "";
-    }
-}
-
-function addMessage(msg, me=false){
-    var div = document.createElement("div");
-    div.classList.add("msg");
-    div.classList.add(me ? "me" : "other");
-    div.textContent = msg.from + ": " + msg.text;
-    chatBox.appendChild(div);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-// Receive private messages
-socket.on("private_message", function(msg){
-    if(currentFriend && msg.from === currentFriend){
-        addMessage(msg);
-    }
-});
+    window.currentUser = '{{ user }}';
+    window.friendName = '{{ friend }}';
 </script>
-
+<script src="/socket.io/socket.io.js"></script>
+<script src="/static/chat.js"></script>
 </body>
 </html>

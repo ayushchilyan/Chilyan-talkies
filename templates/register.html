@@ -1,105 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Register - Birthday App</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #ff758c, #ff7eb3);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .register-card {
-            background: white;
-            padding: 40px;
-            border-radius: 20px;
-            box-shadow: 0px 6px 25px rgba(0,0,0,0.3);
-            width: 400px;
-            text-align: center;
-            animation: slideUp 1s ease-in-out;
-        }
-        h2 {
-            margin-bottom: 20px;
-            color: #d63384;
-        }
-        input {
-            width: 90%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            font-size: 15px;
-        }
-        button {
-            width: 95%;
-            padding: 12px;
-            margin-top: 15px;
-            border: none;
-            border-radius: 10px;
-            background: #d63384;
-            color: white;
-            font-size: 16px;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #ad1457;
-        }
-        a {
-            display: block;
-            margin-top: 15px;
-            color: #ff4081;
-            text-decoration: none;
-            font-size: 14px;
-        }
-        a:hover {
-            text-decoration: underline;
-        }
-        .back-btn {
-            margin-top: 15px;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 10px;
-            background: #6c757d;
-            color: white;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        .back-btn:hover {
-            background: #495057;
-        }
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
-</head>
-<body>
-    <div class="register-card">
-        <h2>📝 Create Your Account</h2>
-        <form method="POST" action="{{ url_for('register') }}">
-            <label for="fullname">Name :</label> 
-            <input type="text" name="fullname" placeholder="Full Name" required><br>
-            <label for="date">Date of Birth :</label> 
-            <input type="date" name="dob" required><br>
-            <label for="username">Username :</label> 
-            <input type="text" name="username" placeholder="Username" required><br>
-            <label for="email">Email :</label> 
-            <input type="email" name="email" placeholder="Email" required><br>
-            <label for="mobile"> Mobile :</label> 
-            <input type="tel" name="mobile" placeholder="Mobile Number" pattern="[0-9]{10}" required><br>
-            <label for="password">Password :</label> 
-            <input type="password" name="password" placeholder="Password (min 6 chars)" minlength="6" required><br>
-            <button type="submit">Register</button>
-            <button onclick="window.history.back()" class="back-btn">⬅️ Back</button>
-        </form>
-        <a href="{{ url_for('login') }}">🔑 Already have an account? Login</a>
-
-       
-    </div>
-</body>
-</html>
+<!-- register.html -->
+{% extends 'base.html' %}
+{% block title %}Register{% endblock %}
+{% block body %}
+<div class="auth-container">
+<h2>Register</h2>
+<form method="POST">
+<input name="username" placeholder="Username" required><br>
+<input name="email" type="email" placeholder="Email" required><br>
+<input name="dob" type="date" required><br>
+<input name="password" type="password" placeholder="Password" required><br>
+<button type="submit">Register</button>
+</form>
+<p style="margin-top:15px;">
+<a href="{{ url_for('login') }}">Back to Login</a>
+</p>
+</div>
+{% endblock %}
