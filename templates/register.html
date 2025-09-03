@@ -82,17 +82,24 @@
     <div class="register-card">
         <h2>📝 Create Your Account</h2>
         <form method="POST" action="{{ url_for('register') }}">
+            <label for="fullname">Name :</label> 
             <input type="text" name="fullname" placeholder="Full Name" required><br>
+            <label for="date">Date of Birth :</label> 
             <input type="date" name="dob" required><br>
+            <label for="username">Username :</label> 
             <input type="text" name="username" placeholder="Username" required><br>
+            <label for="email">Email :</label> 
             <input type="email" name="email" placeholder="Email" required><br>
+            <label for="mobile"> Mobile :</label> 
             <input type="tel" name="mobile" placeholder="Mobile Number" pattern="[0-9]{10}" required><br>
+            <label for="password">Password :</label> 
             <input type="password" name="password" placeholder="Password (min 6 chars)" minlength="6" required><br>
             <button type="submit">Register</button>
+            <button onclick="window.history.back()" class="back-btn">⬅️ Back</button>
         </form>
         <a href="{{ url_for('login') }}">🔑 Already have an account? Login</a>
 
-        <button onclick="window.history.back()" class="back-btn">⬅️ Back</button>
+       
     </div>
 </body>
 </html>
