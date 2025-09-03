@@ -138,7 +138,9 @@
     <!-- Share Link -->
     <div class="card p-4 text-center">
       <h4>🔗 Your Share Link</h4>
-      <p><a href="wish.html" target="_blank">Share with your loved ones 💕</a></p>
+      <p><a href="{{ url_for('wish', username=username) }}" target="_blank">
+      Share with your loved ones 💕
+    </a></p>
       <a href="https://www.instagram.com/chilyanji/" target="_blank" class="btn btn-outline-dark btn-sm">📸 Follow Author</a>
       <a href="{{ url_for('logout') }}" class="btn btn-danger ms-2">🚪 Logout</a>
     </div>
