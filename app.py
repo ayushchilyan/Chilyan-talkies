@@ -108,6 +108,13 @@ def send_otp(email, otp):
         server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
         server.sendmail(EMAIL_ADDRESS, [email], msg.as_string())
 
+# ---------------- Home -----------------
+@app.route("/")
+def home():
+    if "user" in session:
+        return redirect(url_for("dashboard"))
+    return redirect(url_for("login"))
+
 # ---------------- Register -----------------
 @app.route("/register", methods=["GET", "POST"])
 def register():
